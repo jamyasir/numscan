@@ -1,4 +1,4 @@
-![usage]( )
+![usage](https://github.com/jamyasir/numscan/blob/main/num.png)
 
 Simple python script to get phone number information from any country.
 
