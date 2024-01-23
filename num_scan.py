@@ -1,26 +1,54 @@
  
-
-python
 import argparse
-
+import requests
 import phonenumbers
-from phonenumbers import carrier, geocoder
+from phonenumbers import carrier, geocoder, timezone
 from rich.markdown import Markdown
 from rich_argparse import RichHelpFormatter
 
+def is_valid_phone_number(phonenumber: str):
+    try:
+        parsed_number = phonenumbers.parse("+" + phonenumber)
+        return phonenumbers.is_valid_number(parsed_number)
+    except phonenumbers.NumberParseException:
+        return False
+
+def get_ip_info():
+    try:
+        ip_info = requests.get('https://ipinfo.io/json').json()
+        return ip_info
+    except Exception as e:
+        print(f"Failed to fetch IP information: {e}")
+        return None
+
 def parse_phonenumber(phonenumber: str):
+    if not is_valid_phone_number(phonenumber):
+        print("[!] Invalid phone number.")
+        return
+
     parsed_phonenumber = phonenumbers.parse("+" + phonenumber)
     print(f"[*] Parsed Phone Number: {parsed_phonenumber}")
+    print(f"[*] Valid: {phonenumbers.is_valid_number(parsed_phonenumber)}")
+    print(f"[*] Possible: {phonenumbers.is_possible_number(parsed_phonenumber)}")
+    print(f"[*] Number Type: {phonenumbers.number_type(parsed_phonenumber)}")
     print(f"[*] Network Provider: {carrier.name_for_number(parsed_phonenumber,'en')}")
     print(f"[*] Location: {geocoder.description_for_number(parsed_phonenumber,  'en')}")
 
-    if args.output:
-        with open(f"{phonenumber}.txt", "w") as file:
-            file.write(
-                f"{parsed_phonenumber}\n"
-                f"{carrier.name_for_number(parsed_phonenumber,'en')}\n"
-                f"{geocoder.description_for_number(parsed_phonenumber,  'en')}"
-            )
+    # Get Timezone Information
+    time_zone_info = timezone.time_zones_for_number(parsed_phonenumber)
+    if time_zone_info:
+        print(f"[*] Time Zone: {time_zone_info[0]}")
+
+    # Get IP information
+    ip_info = get_ip_info()
+    if ip_info:
+        print(f"[*] IP Address: {ip_info['ip']}")
+        print(f"[*] Location (IP): {ip_info['city']}, {ip_info['region']}, {ip_info['country']}")
+        
+        # Get coordinates if available
+        if 'loc' in ip_info:
+            latitude, longitude = map(float, ip_info['loc'].split(','))
+            print(f"[*] Coordinates: Latitude {latitude}, Longitude {longitude}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -85,4 +113,3 @@ SOFTWARE.
         print(f"Error: {e}")
 
 
- 
